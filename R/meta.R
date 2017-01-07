@@ -280,7 +280,7 @@ fold.data.frame <- function(
   VARIABLE <- sapply(meta,function(f)f %>% as.list %>% `[[`(2) %>% as.character)
   META     <- sapply(meta,function(f)f %>% as.list %>% `[[`(3) %>% as.character)
   COL      <- names(meta)
-  table <- data.frame(stringsAsFactors = FALSE,VARIABLE,META,COL)
+  table <- cbind(VARIABLE,META,COL) %>% data.frame(stringsAsFactors = FALSE)
   # data
   d <- x[,setdiff(names(x),COL),drop=F]
   d %<>% gather_('VARIABLE','VALUE',setdiff(names(d),group_by))
