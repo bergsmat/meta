@@ -4,10 +4,13 @@
 #' 
 #' Simply calls as.csv.data.frame
 #' 
-#' @inheritParams as.csv
+#' @inheritParams csv::as.csv
 #' @return invisible meta (x)
 #' @export
-as.csv.meta <- function(x,...)as.csv.data.frame(x,...)
+as.csv.meta <- function(x,...){
+  class(x) <- data.frame
+  csv::as.csv(x,...)
+}
 
 
 #' Coerce to Meta Format
@@ -29,7 +32,7 @@ as.meta <- function(x,...)UseMethod('as.meta')
 #' @return meta
 #' @export
 as.meta.character <- function(x,...){
-  y <- as.csv.character(x,...)
+  y <- csv::as.csv(x,...)
   y <- as.meta(y)
   y
 }
@@ -51,7 +54,7 @@ as.meta.meta <- function(x,...)x
 #' Expects columns VARIABLE, META, and VALUE. Remaining columns are for classification and may be NA. Coerces VALUE to character. Removes duplicate records with warning. Sorts on non-value columns by default
 #' 
 #' @inheritParams as.meta
-#' @sort Should the result be sorted?
+#' @param sort Should the result be sorted?
 #' @return meta
 #' @export
 as.meta.data.frame <- function(x,sort=TRUE,...){
@@ -93,7 +96,7 @@ as.meta.data.frame <- function(x,sort=TRUE,...){
 #' @param x object
 #' @param ... passed arguments
 #' @export
-#' @keyword internal
+#' @keywords internal
 distill <- function(x,...)UseMethod('distill')
 
 #' Distill a Variable of Meta
@@ -104,7 +107,7 @@ distill <- function(x,...)UseMethod('distill')
 #' @param variable character
 #' @param meta character
 #' @export
-#' @keyword internal
+#' @keywords internal
 distill.meta <- function(x,...){
   class(x) <- setdiff(class(x),'meta')
   distill(x,...)
@@ -121,7 +124,7 @@ distill.meta <- function(x,...){
 #' @param variable character
 #' @param meta character
 #' @export
-#' @keyword internal
+#' @keywords internal
 
 distill.data.frame <- function(
   x,
@@ -261,14 +264,14 @@ fold <- function(x,...)UseMethod('fold')
 #' I.e. convert from wide format to tall format. An attempt will be made to harvest metadata using the header convention object_attribute.
 
 #' @inheritParams fold
-#' @param groups a vector of column names serving as key: included in result but not stacked
+#' @param group_by a vector of column names serving as key: included in result but not stacked
 #' @param meta a list of formulas in the form object ~ attribute. Pass something with length 0 to suppress guessing.
 #' @param simplify set to NA any group_by values that do not help distinguish values, and remove resulting duplicate records
 #' @return meta data.frame (folded)
 #' @export
 fold.data.frame <- function(
   x, 
-  group_by=groups(x),
+  group_by = groups(x),
   meta = obj_attr(x),
   simplify = TRUE,
   ...

@@ -6,13 +6,17 @@ Date: 2017-01-06
 Author: Tim Bergsma
 Maintainer: Tim Bergsma <bergsmat@gmail.com>
 Description: Defines a compact data format that includes metadata.  Establishes 
-conventions for collapsing a data.frame to this format (fold) or unpacking 
-this format as a data.frame (unfold).
+ conventions for collapsing a data.frame to this format (fold) or unpacking 
+ this format as a data.frame (unfold).
 License: GPL-3
 LazyData: TRUE
 Imports: 
  csv,
- encode
+ encode,
+ knitr,
+ magrittr,
+ dplyr,
+ tidyr
 Suggests:
 RoxygenNote: 5.0.1
 VignetteBuilder: knitr
