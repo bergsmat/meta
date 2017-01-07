@@ -439,7 +439,22 @@ unique.meta <- function(x, incomparables = FALSE,...){
   y
 }
 
+#' Interpret something
+#' 
+#' Interprets something.
+#' 
+#' @param x object
+#' @param ... passed arguments
+#' @export
 interpret <- function(x,...)UseMethod('interpret')
+
+#' Interpret Data in Meta Format
+#' 
+#' Interprets data in meta format.  Specifically, substitutes decodes for codes
+#' when presenting encoded variables.
+#' @inheritParams interpret
+#' @return meta data.frame
+#' @export
 interpret.meta <- function(x,...){
   meta <- x %>% 
     filter(META %in% c('GUIDE','LABEL')) %>%
