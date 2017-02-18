@@ -1,3 +1,24 @@
+globalVariables('%>%')
+globalVariables('VALUE')
+globalVariables('LABEL')
+globalVariables('GUIDE')
+globalVariables('META')
+globalVariables('VARIABLE')
+globalVariables('encode')
+globalVariables('groups')
+globalVariables('mutate')
+globalVariables('left_join')
+globalVariables('decode')
+globalVariables('encoded')
+# globalVariables('informative')
+globalVariables('if_else')
+globalVariables('parens')
+globalVariables('ungroup')
+globalVariables('read.table')
+globalVariables('as.formula')
+globalVariables('bind_rows')
+
+.informative <- function (x, ...) x[, sapply(x, function(col) any(!is.na(col))), drop = FALSE]
 #' Save Meta Format as CSV
 #' 
 #' Saves meta format as csv.
@@ -67,10 +88,11 @@ as.meta.data.frame <- function(x,sort=TRUE,...){
   x <- x[,c(constitutive,extras),drop=FALSE]
   if(any(duplicated(x))){
     warning('removing duplicates')
-    x %>% unique
+    x <- unique(x)
   }
-  if(sort) x %>% arrange_(.dots=setdiff(names(x),'VALUE'))
-  d <- x %>% select(-VALUE)
+  if(sort) x <-  dplyr::arrange_(x,.dots=setdiff(names(x),'VALUE'))
+  VALUE <- NULL # squelch R CMD CHECK NOTE
+  d <- dplyr::select(x,-VALUE)
   d <- d[duplicated(d),,drop=FALSE]
   if(nrow(d)){
     eg <- d[1,,drop=FALSE]
@@ -78,7 +100,7 @@ as.meta.data.frame <- function(x,sort=TRUE,...){
     eg <- do.call(paste,c(as.list(eg),list(collapse=', ')))
     warning('found duplicates of ',nms,' e.g. ',eg)
   }
-  d <- x %>% select(-VALUE)
+  d <- dplyr::select(x,-VALUE)
   if(ncol(d) > 2) d <- d[,1:(ncol(d) - 1),drop=FALSE] # select all but last
   d <- d[duplicated(d),,drop=FALSE]
   if(!nrow(d)){
@@ -132,33 +154,37 @@ distill.data.frame <- function(
   parent=character(0),
   ...
 ){
+  # squelch R CMD CHECK NOTE
+  # VARIABLE <- NULL
+  # META <- NULL
+  # VALUE <- NULL
   res=data.frame()
-  data <- x %>% filter(VARIABLE == mission & META %>% is.na)
+  data <-  dplyr::filter(x, VARIABLE == mission & META %>% is.na)
   if(nrow(data)) {
-    data %<>% spread(VARIABLE,VALUE,convert=TRUE)
-    data %<>% select(-META) 
-    data %<>% informative
+    data <- tidyr::spread(data,VARIABLE,VALUE,convert=TRUE)
+    data <- dplyr::select(data,-META) 
+    data <- .informative(data)
     res <- data
   }
-  meta <- x %>% filter(VARIABLE == mission & META %>% is.defined)
+  meta <-  dplyr::filter(x, VARIABLE == mission & is.defined(META))
   if(nrow(meta)){
     for(m in unique(meta$META)){
      # message('processing attribute ',m)
       me <- meta
-      me %<>% filter(META == m) 
-      me %<>% spread(META,VALUE) 
-      me %<>% select(-VARIABLE)
-      me %<>% informative
+      me <- dplyr::filter(me, META == m) 
+      me <- tidyr::spread(me, META,VALUE) 
+      me <- dplyr::select(me, -VARIABLE)
+      me <-  .informative(me)
       lineage <- c(parent,mission)
       canonical <- c(lineage,m)
       canonical <- paste(canonical,collapse='_')
       names(me)[names(me) == m] <- canonical
       mo <- distill.meta(x,mission=m,parent=lineage,...)
-      me %<>% weld(mo)
+      me <- weld(me, mo)
       enc <- all(encoded(me[[canonical]])) & length(me[[canonical]]) == 1
       if(!nrow(res))res <- me
-      if(nrow(res) & !enc) res %<>% weld(me)
-      if(nrow(res) &  enc) res %<>% decode(
+      if(nrow(res) & !enc) res <- weld(res,me)
+      if(nrow(res) &  enc) res <- decode(res,
         encoded=mission,
         encoding=me[[canonical]][[1]],
         decoded = canonical,
@@ -197,50 +223,93 @@ unfold.meta <- function(
   y <- lapply(var,function(v)distill(x,mission=v,...))
   z <- metaMerge(y)
   groups <- intersect(groups,names(z))
-  z %<>% group_by_(.dots=groups)
+  z <- dplyr::group_by_(z,.dots=groups)
   z
 }
-                          
+
+#' Filter Meta
+#' 
+#' Filters meta.
+#' @inheritParams dplyr::filter_
+#' @return meta
+#' @export                        
 filter_.meta <- function(.data,...,.dots,add = FALSE){
   x <- NextMethod()
   class(x) <- union('meta',class(x))
   x
 }
+#' Group Meta
+#' 
+#' Groups meta.
+#' @inheritParams dplyr::filter_
+#' @return meta
+#' @export                        
 group_by_.meta <- function(.data,...,.dots,add = FALSE){
   x <- NextMethod()
   class(x) <- union('meta',class(x))
   x
 }
-group_by_.meta <- function(.data,...,.dots,add = FALSE){
-  x <- NextMethod()
-  class(x) <- union('meta',class(x))
-  x
-}
+#' Anti-join Meta
+#' 
+#' Anti-joins meta.
+#' @inheritParams dplyr::filter_
+#' @return meta
+#' @export                        
 anti_join.meta <- function(.data,...,.dots,add = FALSE){
   x <- NextMethod()
   class(x) <- union('meta',class(x))
   x
 }
+#' Ungroup Meta
+#' 
+#' Ungroups meta.
+#' @inheritParams dplyr::filter_
+#' @return meta
+#' @export                        
 ungroup.meta <- function(.data,...,.dots,add = FALSE){
   x <- NextMethod()
   class(x) <- union('meta',class(x))
   x
 }
+#' Mutate Meta
+#' 
+#' Mutates meta.
+#' @inheritParams dplyr::filter_
+#' @return meta
+#' @export                        
 mutate_.meta <- function(.data,...,.dots,add = FALSE){
   x <- NextMethod()
   class(x) <- union('meta',class(x))
   x
 }
+#' Left-join Meta
+#' 
+#' Left-joins meta.
+#' @inheritParams dplyr::filter_
+#' @return meta
+#' @export                        
 left_join.meta <- function(.data,...,.dots,add = FALSE){
   x <- NextMethod()
   class(x) <- union('meta',class(x))
   x
 }
+#' Select Meta
+#' 
+#' Selects meta.
+#' @inheritParams dplyr::filter_
+#' @return meta
+#' @export                        
 select_.meta <- function(.data,...,.dots,add = FALSE){
   x <- NextMethod()
   class(x) <- union('meta',class(x))
   x
 }
+#' Arrange Meta
+#' 
+#' Arranges meta.
+#' @inheritParams dplyr::filter_
+#' @return meta
+#' @export                        
 arrange_.meta <- function(.data,...,.dots,add = FALSE){
   x <- NextMethod()
   class(x) <- union('meta',class(x))
@@ -276,6 +345,7 @@ fold.data.frame <- function(
   simplify = TRUE,
   ...
 ){
+  if(is.null(group_by))warning('Nothing to group by.  Do you need to supply groups?')
   # meta
   VARIABLE <- sapply(meta,function(f)f %>% as.list %>% `[[`(2) %>% as.character)
   META     <- sapply(meta,function(f)f %>% as.list %>% `[[`(3) %>% as.character)
@@ -283,17 +353,23 @@ fold.data.frame <- function(
   table <- cbind(VARIABLE,META,COL) %>% data.frame(stringsAsFactors = FALSE)
   # data
   d <- x[,setdiff(names(x),COL),drop=F]
-  d %<>% gather_('VARIABLE','VALUE',setdiff(names(d),group_by))
-  d %<>% mutate(META=NA_character_)
-  d %<>% mutate(VALUE = VALUE %>% as.character)
+  d <- tidyr::gather_(d,'VARIABLE','VALUE',setdiff(names(d),group_by))
+  d <- mutate(d,META=NA_character_)
+  d <- mutate(d,VALUE = VALUE %>% as.character)
+  d <- as.meta(d)
+  if(simplify) d <- unique(reduce(d))
   if(nrow(table)){
-    m <- x %>% 
-      select_(.dots=c(group_by,COL)) %>% 
-      gather_('COL','VALUE',COL) %>%
+    m <- x
+    for(i in seq_along(m))if(is.factor(m[[i]]))m[[i]] <- as.character(m[[i]]) 
+    # prevent tidyr warning about differing attributes.  
+    # Factor levels to be recovered later from x.
+    m %<>% 
+      dplyr::select_(.dots=c(group_by,COL)) %>% 
+      tidyr::gather_('COL','VALUE',COL) %>%
       unique
-    m %<>% left_join(table,by='COL') %>% select(-COL)
-    m %<>% select_(.dots=c('VARIABLE','META','VALUE',group_by))
-    m %<>% as.meta
+    m <- left_join(m,table,by='COL') %>% dplyr::select(-COL)
+    m <- dplyr::select_(m,.dots=c('VARIABLE','META','VALUE',group_by))
+    m <- as.meta(m)
     for(i in 1:nrow(table)){
       var <- table[i,'VARIABLE']
       met <- table[i,'META']
@@ -305,11 +381,11 @@ fold.data.frame <- function(
         m$VALUE[m$VARIABLE == var & m$META == met] <- encoding
       }
     }
-    if(simplify) m %<>% reduce %>% unique
-    m %<>% select_(.dots=c('VARIABLE','META','VALUE',group_by))
+    if(simplify) m <- unique(reduce(m))
+    m <- dplyr::select_(m,.dots=c('VARIABLE','META','VALUE',group_by))
     d <- bind_rows(m,d)
   }
-  d %<>% as.meta # sorts by default. ?
+  d <- as.meta(d) # sorts by default. ?
   d
 }
   
@@ -416,8 +492,8 @@ reduce.meta <- function(x,ignore=character(0),protect=FALSE,...){
   if(!length(classifiers))return(x)
   test <- rev(classifiers)[[1]]
   remaining <- setdiff(classifiers,test)
-  y <- x %>% group_by_(.dots=c('VARIABLE','META',remaining))
-  y %<>% mutate(count = length(unique(VALUE)))
+  y <- x %>% dplyr::group_by_(.dots=c('VARIABLE','META',remaining))
+  y <- mutate(y, count = length(unique(VALUE)))
   y$protect <- protect
   target <- y$count == 1 & !y$protect
   y[[test]][target] <- NA
@@ -460,29 +536,44 @@ interpret <- function(x,...)UseMethod('interpret')
 #' @export
 interpret.meta <- function(x,...){
   meta <- x %>% 
-    filter(META %in% c('GUIDE','LABEL')) %>%
-    spread(META,VALUE) %>% 
-    select(VARIABLE,GUIDE,LABEL) %>% 
+    dplyr::filter(META %in% c('GUIDE','LABEL')) %>%
+    tidyr::spread(META,VALUE) %>% 
+    dplyr::select(VARIABLE,GUIDE,LABEL) %>% 
     mutate(encoded = encoded(GUIDE))
-  x %<>% filter(!META %in% c('GUIDE','LABEL'))
-  x %<>% left_join(meta,by='VARIABLE')
-  x %<>% mutate(VARIABLE = if_else(
+  x <- dplyr::filter(x,!META %in% c('GUIDE','LABEL'))
+  x <- left_join(x,meta,by='VARIABLE')
+  x <- mutate(x,VARIABLE = if_else(
     encoded,
     LABEL,
     paste(LABEL,parens(GUIDE))
-  )) %>% select(-encoded,-LABEL)
-  x %<>% 
-    group_by(VARIABLE) %>%
+  )) %>% dplyr::select(-encoded,-LABEL)
+  x <- 
+    dplyr::group_by(x,VARIABLE) %>%
     mutate(VALUE = decode(VALUE,GUIDE[[1]])) %>%
     ungroup %>%
-    select(-GUIDE)
+    dplyr::select(-GUIDE)
   x
 }
 
-
-
-
-
-
-
-
+metaMerge <- function(x,...)UseMethod('metaMerge')
+metaMerge.list <- function(x,all=TRUE,...){
+  if(length(x)==0)return(x)
+  if(length(x)==1)return(x[[1]])
+  metaMerge(x=metaMerge(x[-length(x)]),y=x[[length(x)]],all=all,...)
+}
+metaMerge.character <- function(x,import=read.table,all=TRUE,...){
+  miss <- x[!file.exists(x)]
+  if(length(miss))stop('cannot find, e.g.,',miss[[1]])
+  import <- match.fun(import)
+  x <- lapply(x,import,...)
+  metaMerge(x,all=all,...)
+}
+metaMerge.default <- function(x,y,all=TRUE,...)merge(x,y,all=all,...)
+metaMerge.data.frame <- function(x,y,all=TRUE,...){
+  if(is.null(y))warning('merging data.frame with NULL object')
+  merge(x,y,all=all,...)
+}
+metaMerge.NULL <- function(x,y,all=TRUE,...){
+  warning('merging NULL object')
+  merge(x,y,all=all,...)
+}

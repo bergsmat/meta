@@ -11,12 +11,12 @@ Description: Defines a compact data format that includes metadata.  Establishes
 License: GPL-3
 LazyData: TRUE
 Imports: 
- csv,
- encode,
- knitr,
- magrittr,
+ tidyr,
  dplyr,
- tidyr
+ magrittr,
+ encode
 Suggests:
+ csv,
+ wrangle
 RoxygenNote: 5.0.1
 VignetteBuilder: knitr
